@@ -1,0 +1,1 @@
+ghc --make "ExpressionParser.hs" -i C:\Users\Justi\Haskell\CompilerInHaskell\Parser\Parser.hs -i C:\Users\Justi\Haskell\CompilerInHaskell\Language\AST.hs

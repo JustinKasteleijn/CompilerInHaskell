@@ -1,4 +1,4 @@
---module Parser where
+module Parser where
 
 import Control.Applicative (Alternative(..))
 import Data.Char (isSpace, isDigit)
@@ -82,6 +82,15 @@ space = sat isSpace
 digit :: Parser Char 
 digit = sat isDigit
 
+newline :: Parser ()
+newline = (string "\\n"
+  <|> string "\\r" 
+  <|> string "\\r\\n")
+  *> pure ()
+
+token :: Parser a -> Parser a
+token p = space *> p <* space
+
 nat :: Parser Int 
 nat = read <$> some digit
 
@@ -111,6 +120,6 @@ sepBy1 px psep = (:)
 sepBy :: Parser a -> Parser b -> Parser [a] 
 sepBy px psep = sepBy1 px psep <|> pure []
 
-main :: IO ()
-main = do
-  print $ parse (sepBy nat (char ',')) ""
+--main :: IO ()
+--main = do
+--  print $ parse (sepBy nat (char ',')) ""
