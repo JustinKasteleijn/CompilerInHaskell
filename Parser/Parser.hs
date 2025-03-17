@@ -82,8 +82,11 @@ space = sat isSpace
 digit :: Parser Char 
 digit = sat isDigit
 
+nat :: Parser Int 
+nat = read <$> some digit
+
 int :: Parser Int 
-int = read <$> some digit
+int = nat <|> char '-' *> (negate <$> nat)
     
 string :: String -> Parser String 
 string = mapM char
@@ -99,8 +102,15 @@ sat pred =
 whitespace :: Parser () 
 whitespace = 
   many space *> pure ()
+  
+sepBy1 :: Parser a -> Parser b -> Parser [a] 
+sepBy1 px psep = (:) 
+  <$> px 
+  <*> many (psep *> px) 
 
+sepBy :: Parser a -> Parser b -> Parser [a] 
+sepBy px psep = sepBy1 px psep <|> pure []
 
 main :: IO ()
 main = do
-  print $ parse (int) "23432424dfgdfg"
+  print $ parse (sepBy nat (char ',')) ""

@@ -21,5 +21,11 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+
+# Ignore all .exe.tmp files
+*.exe.tmp*
+
+# Ignore all build artifacts
 *.exe
-*.exe.tmp
+*.hi
+*.o
