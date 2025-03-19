@@ -1,13 +1,13 @@
-
 import Parser 
 import AST
 import Control.Applicative (Alternative(..))
 
 parseStatements :: Parser [Statement]
-parseStatements = parseStatement `sepBy1` (whitespace *> string "\\n" <* whitespace)
+parseStatements = parseStatement `sepBy1` (token $ string "\\n")
 
-parseStatement :: Parser Statement 
-parseStatement = parseIfStatement
+parseStatement :: Parser Statement
+parseStatement = parseIfStatement 
+  <|> parseAssignment
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do 
@@ -19,20 +19,27 @@ parseIfStatement = do
   expr  <- whitespace *> parseExpression
   _     <- whitespace *> string "else"
   expr' <- whitespace *> parseExpression
-  return $ (If cond expr expr') 
+  return $ If cond expr expr'
+
+parseAssignment :: Parser Statement
+parseAssignment = do
+  var <- token $ some alphaNum 
+  _   <- token $ char '='
+  expr <- parseExpression
+  return $ Assignment var expr
 
 parseExpression :: Parser Expr
-parseExpression = parseCondition
-  <|> parseArith
-  
+parseExpression = parseArith
+  <|> parseCondition
+  <|> parseLiteral
+
 parseCondition :: Parser Expr 
 parseCondition = do 
-  x <- parseArith
+  x <- parseExpression
   _ <- token $ string "=="
-  y <- parseArith 
+  y <- parseExpression
   return $ x :==: y 
 
--- Study more feels a lil bit like magic 
 parseArith :: Parser Expr
 parseArith = do
   x <- parseLiteral
@@ -46,6 +53,9 @@ parseArith = do
           y <- parseLiteral
           rest (x :-: y)) <|>
       pure x
+      
+parseVar :: Parser Expr 
+parseVar = Var <$> (some (alphaNum))
 
 parseLiteral :: Parser Expr 
 parseLiteral = (Literal <$> parseVal)
@@ -58,8 +68,8 @@ parseVal = (ValBool True <$ string "true")
 main :: IO ()
 main = do 
   expr <- getLine
+  --print $ parse parseStatements expr
   case parse parseStatements expr of 
-    Just (stmts, _) -> execute stmts
+    Just (stmts, _) -> execute stmts []
     _               -> print $ "invalid input"
   main 
-

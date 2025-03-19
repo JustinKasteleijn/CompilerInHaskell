@@ -1,11 +1,15 @@
 module AST where
 
+type Env = [(String, Val)]
+
 data Statement 
   = If Expr Expr Expr
+  | Assignment String Expr 
  deriving (Show)
 
 data Expr 
   = Literal Val
+  | Var String 
   | Expr :+: Expr
   | Expr :-: Expr
   | Expr :==: Expr 
@@ -16,40 +20,47 @@ data Val
   | ValBool Bool
  deriving (Show, Eq)
 
-eval :: Expr -> Maybe Val
-eval (Literal x)          = Just $ x
-eval (expr :+: expr')     = do 
-  (ValInt x) <- eval expr 
-  (ValInt y) <- eval expr'
+eval :: Expr -> Env -> Maybe Val
+eval (Literal x) env       = Just $ x
+eval (Var s) env           = lookup s env
+eval (expr :+: expr') env  = do 
+  (ValInt x) <- eval expr env
+  (ValInt y) <- eval expr' env
   return $ ValInt $ x + y
-eval (expr :-: expr')     = do 
-  (ValInt x) <- eval expr 
-  (ValInt y) <- eval expr'
+eval (expr :-: expr') env  = do 
+  (ValInt x) <- eval expr env
+  (ValInt y) <- eval expr' env
   return $ ValInt $ x - y
-eval (expr :==: expr')    = do 
-  x <- eval expr 
-  y <- eval expr'
+eval (expr :==: expr') env = do 
+  x <- eval expr env
+  y <- eval expr' env
   return $ ValBool $ x == y  
 
-execute :: [Statement] -> IO ()
-execute []           = pure ()
-execute (stmt:stmts) = do 
+execute :: [Statement] -> Env -> IO ()
+execute [] env           = pure ()
+execute (stmt:stmts) env = do 
   case stmt of 
+    (Assignment var expr) -> 
+      case eval expr env of  
+        (Just val) -> let newEnv = (var, val) : env
+                      in execute stmts newEnv
+        Nothing    -> print $ "ERROR: Invalid assignment to " ++ var
     (If cond expr expr') -> do 
-      case eval cond of 
-        Just (ValBool True)  -> print $ eval expr
-        Just (ValBool False) -> print $ eval expr'
-        _                    -> error "Condition must be of type Boolean"
-  execute stmts
+      case eval cond env of 
+        Just (ValBool True)  -> print $ eval expr env
+        Just (ValBool False) -> print $ eval expr' env
+        _                    -> print $ "ERROR: Condition must be of type Boolean"
+  execute stmts env
 
 --main :: IO ()
 --main = do
 --  let program = [
+--          Assignment "x" (Literal (ValInt 5)),   
 --          If (Literal (ValBool False)) 
---              ((Literal (ValInt 5)) :+: (Literal (ValInt 10))) 
---              (Literal (ValInt 5)),
+--             ((Var "x") :+: (Literal (ValInt 10))) 
+--              (Var "x"),
 --          If (Literal (ValBool True)) 
 --              ((Literal (ValInt 2)) :+: (Literal (ValInt 3))) 
 --              (Literal (ValInt 7))
 --        ]
---  execute program
+--  execute program []

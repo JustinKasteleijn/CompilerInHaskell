@@ -1,7 +1,7 @@
 module Parser where
 
 import Control.Applicative (Alternative(..))
-import Data.Char (isSpace, isDigit)
+import Data.Char (isSpace, isDigit, isAlphaNum, isAlpha)
 
 newtype Parser a = Parser { parse :: String -> Maybe (a, String) }
 
@@ -82,6 +82,12 @@ space = sat isSpace
 digit :: Parser Char 
 digit = sat isDigit
 
+alphaNum :: Parser Char 
+alphaNum = sat isAlphaNum
+
+alpha :: Parser Char
+alpha = sat isAlpha
+
 newline :: Parser ()
 newline = (string "\\n"
   <|> string "\\r" 
@@ -89,7 +95,7 @@ newline = (string "\\n"
   *> pure ()
 
 token :: Parser a -> Parser a
-token p = space *> p <* space
+token p = whitespace *> p <* whitespace
 
 nat :: Parser Int 
 nat = read <$> some digit
@@ -119,6 +125,13 @@ sepBy1 px psep = (:)
 
 sepBy :: Parser a -> Parser b -> Parser [a] 
 sepBy px psep = sepBy1 px psep <|> pure []
+
+try :: Parser a -> Parser a 
+try p = 
+  Parser $ \input -> 
+    case parse p input of
+      Just (x, rest) -> Just (x, rest)
+      Nothing        -> Nothing 
 
 --main :: IO ()
 --main = do
