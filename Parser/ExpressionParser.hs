@@ -29,20 +29,21 @@ parseAssignment = do
   return $ Assignment var expr
 
 parseExpression :: Parser Expr
-parseExpression = parseArith
-  <|> parseCondition
+parseExpression = parseCondition
+  <|> parseArith
+  <|> parseVar
   <|> parseLiteral
 
 parseCondition :: Parser Expr 
 parseCondition = do 
-  x <- parseExpression
+  x <- whitespace *> parseLiteral <|> parseVar
   _ <- token $ string "=="
   y <- parseExpression
   return $ x :==: y 
-
+                                                                                                                                         
 parseArith :: Parser Expr
 parseArith = do
-  x <- parseLiteral
+  x <- parseLiteral <|> parseVar
   rest x
   where
     rest x = 
@@ -68,7 +69,7 @@ parseVal = (ValBool True <$ string "true")
 main :: IO ()
 main = do 
   expr <- getLine
-  --print $ parse parseStatements expr
+  print $ parse parseStatements expr
   case parse parseStatements expr of 
     Just (stmts, _) -> execute stmts []
     _               -> print $ "invalid input"

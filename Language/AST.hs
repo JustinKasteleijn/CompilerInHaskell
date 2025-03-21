@@ -37,20 +37,24 @@ eval (expr :==: expr') env = do
   return $ ValBool $ x == y  
 
 execute :: [Statement] -> Env -> IO ()
-execute [] env           = pure ()
+execute [] env = pure ()
 execute (stmt:stmts) env = do 
-  case stmt of 
+  newEnv <- case stmt of 
     (Assignment var expr) -> 
       case eval expr env of  
-        (Just val) -> let newEnv = (var, val) : env
-                      in execute stmts newEnv
-        Nothing    -> print $ "ERROR: Invalid assignment to " ++ var
+        Just val -> pure ((var, val) : env)
+        Nothing  -> do
+          print $ "ERROR: Invalid assignment to " ++ var
+          pure env
     (If cond expr expr') -> do 
       case eval cond env of 
         Just (ValBool True)  -> print $ eval expr env
         Just (ValBool False) -> print $ eval expr' env
         _                    -> print $ "ERROR: Condition must be of type Boolean"
-  execute stmts env
+      pure env
+
+  execute stmts newEnv  -- Always use the updated environment
+
 
 --main :: IO ()
 --main = do
