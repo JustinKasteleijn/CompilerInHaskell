@@ -3,8 +3,9 @@ module AST where
 type Env = [(String, Val)]
 
 data Statement 
-  = If Expr Expr Expr
+  = If Expr [Statement] [Statement]
   | Assignment String Expr 
+  | Print Expr 
  deriving (Show)
 
 data Expr 
@@ -46,15 +47,22 @@ execute (stmt:stmts) env = do
         Nothing  -> do
           print $ "ERROR: Invalid assignment to " ++ var
           pure env
-    (If cond expr expr') -> do 
+    (If cond ifbody elsebody) -> do 
       case eval cond env of 
-        Just (ValBool True)  -> print $ eval expr env
-        Just (ValBool False) -> print $ eval expr' env
+        Just (ValBool True)  -> execute ifbody env
+        Just (ValBool False) -> execute elsebody env
         _                    -> print $ "ERROR: Condition must be of type Boolean"
       pure env
+    (Print expr) -> 
+      case eval expr env of
+          (Just val) -> printVal val *> pure env
+          Nothing    -> pure env  
 
-  execute stmts newEnv  -- Always use the updated environment
+  execute stmts newEnv
 
+printVal :: Val -> IO ()
+printVal (ValInt x)   = print x 
+printVal (ValBool x)  = print x 
 
 --main :: IO ()
 --main = do

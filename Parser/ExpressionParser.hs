@@ -8,6 +8,7 @@ parseStatements = parseStatement `sepBy1` (token $ string "\\n")
 parseStatement :: Parser Statement
 parseStatement = parseIfStatement 
   <|> parseAssignment
+  <|> parsePrint
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do 
@@ -16,10 +17,10 @@ parseIfStatement = do
   cond  <- whitespace *> parseExpression
   _     <- whitespace *> char ')'
   _     <- whitespace *> string "then"
-  expr  <- whitespace *> parseExpression
+  stmt  <- whitespace *> parseStatements
   _     <- whitespace *> string "else"
-  expr' <- whitespace *> parseExpression
-  return $ If cond expr expr'
+  stmt' <- whitespace *> parseStatements
+  return $ If cond stmt stmt'
 
 parseAssignment :: Parser Statement
 parseAssignment = do
@@ -27,6 +28,12 @@ parseAssignment = do
   _   <- token $ char '='
   expr <- parseExpression
   return $ Assignment var expr
+  
+parsePrint :: Parser Statement 
+parsePrint = Print 
+  <$  string "print" 
+  <*  whitespace
+  <*> parseExpression
 
 parseExpression :: Parser Expr
 parseExpression = parseCondition
