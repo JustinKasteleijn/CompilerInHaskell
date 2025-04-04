@@ -77,7 +77,7 @@ char c = Parser charP
       | otherwise = Nothing
 
 space :: Parser Char
-space = sat isSpace     
+space = sat (\c -> c == ' ' || c == '\t')      
 
 digit :: Parser Char 
 digit = sat isDigit
@@ -89,9 +89,8 @@ alpha :: Parser Char
 alpha = sat isAlpha
 
 newline :: Parser ()
-newline = (string "\\n"
-  <|> string "\\r" 
-  <|> string "\\r\\n")
+newline = (char '\n'
+  <|> char '\r')
   *> pure ()
 
 token :: Parser a -> Parser a
@@ -106,6 +105,9 @@ int = nat <|> char '-' *> (negate <$> nat)
 string :: String -> Parser String 
 string = mapM char
 
+indented :: Parser ()
+indented = string "  " *> pure ()
+
 sat :: (Char -> Bool) -> Parser Char
 sat pred = 
   Parser $ \input -> do
@@ -117,6 +119,9 @@ sat pred =
 whitespace :: Parser () 
 whitespace = 
   many space *> pure ()
+  
+lineBreak :: Parser ()
+lineBreak = many space *> newline *> pure ()
   
 sepBy1 :: Parser a -> Parser b -> Parser [a] 
 sepBy1 px psep = (:) 

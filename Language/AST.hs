@@ -6,20 +6,24 @@ data Statement
   = If Expr [Statement] [Statement]
   | Assignment String Expr 
   | Print Expr 
+  | While Expr [Statement]
  deriving (Show)
 
 data Expr 
   = Literal Val
   | Var String 
-  | Expr :+: Expr
-  | Expr :-: Expr
+  | Expr :+:  Expr
+  | Expr :-:  Expr
   | Expr :==: Expr 
+  | Expr :!=: Expr
+  | Expr :<:  Expr
+  | Expr :>:  Expr 
  deriving (Show)
   
 data Val 
   = ValInt Int 
   | ValBool Bool
- deriving (Show, Eq)
+ deriving (Show, Eq, Ord)
 
 eval :: Expr -> Env -> Maybe Val
 eval (Literal x) env       = Just $ x
@@ -36,6 +40,18 @@ eval (expr :==: expr') env = do
   x <- eval expr env
   y <- eval expr' env
   return $ ValBool $ x == y  
+eval (expr :!=: expr') env = do 
+  x <- eval expr env
+  y <- eval expr' env 
+  return $ ValBool $ x /= y
+eval (expr :<: expr') env  = do 
+  x <- eval expr env
+  y <- eval expr' env 
+  return $ ValBool $ x < y 
+eval (expr :>: expr') env  = do 
+  x <- eval expr env
+  y <- eval expr' env 
+  return $ ValBool $ x > y
 
 execute :: [Statement] -> Env -> IO ()
 execute [] env = pure ()
@@ -57,6 +73,13 @@ execute (stmt:stmts) env = do
       case eval expr env of
           (Just val) -> printVal val *> pure env
           Nothing    -> pure env  
+    (While cond body) -> do 
+      case eval cond env of 
+        Just (ValBool True)  -> do 
+          execute (body++((While cond body):stmts)) env
+        Just (ValBool False) -> pure () 
+        _                    -> print $ "ERROR: Condition must be of type Boolean"
+      pure env 
 
   execute stmts newEnv
 
