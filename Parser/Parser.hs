@@ -137,6 +137,15 @@ try p =
     case parse p input of
       Just (x, rest) -> Just (x, rest)
       Nothing        -> Nothing 
+      
+between :: Parser open -> Parser close -> Parser a -> Parser a 
+between po pc p = 
+   po 
+   *> p
+   <* pc 
+   
+optional :: Parser a -> Parser (Maybe a)
+optional p = (Just <$> p) <|> pure Nothing 
 
 --main :: IO ()
 --main = do

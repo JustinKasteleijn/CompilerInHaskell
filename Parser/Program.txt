@@ -1,4 +1,4 @@
-x = 0
-while (x < 5)
-  x = x + 1
-  if (x == 3) then print x + x else print x 
+x = 5 * (5 + 5)
+while (x < 25000)
+  print x
+  x = 5 * x

@@ -14,6 +14,8 @@ data Expr
   | Var String 
   | Expr :+:  Expr
   | Expr :-:  Expr
+  | Expr :*:  Expr
+  | Expr :/:  Expr
   | Expr :==: Expr 
   | Expr :!=: Expr
   | Expr :<:  Expr
@@ -36,6 +38,14 @@ eval (expr :-: expr') env  = do
   (ValInt x) <- eval expr env
   (ValInt y) <- eval expr' env
   return $ ValInt $ x - y
+eval (expr :*: expr') env  = do 
+  (ValInt x) <- eval expr env
+  (ValInt y) <- eval expr' env
+  return $ ValInt $ x * y
+eval (expr :/: expr') env  = do 
+  (ValInt x) <- eval expr env
+  (ValInt y) <- eval expr' env
+  return $ ValInt $ x `div` y
 eval (expr :==: expr') env = do 
   x <- eval expr env
   y <- eval expr' env

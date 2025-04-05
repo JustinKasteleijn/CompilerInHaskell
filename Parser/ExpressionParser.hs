@@ -3,7 +3,7 @@ import AST
 import Control.Applicative (Alternative(..))
 
 parseStatements :: Parser [Statement]
-parseStatements = parseStatement `sepBy1` lineBreak
+parseStatements = some (parseStatement <* optional lineBreak)
 
 parseStatement :: Parser Statement
 parseStatement = parseIfStatement 
@@ -31,10 +31,11 @@ parseAssignment = do
   return $ Assignment var expr
   
 parseWhile :: Parser Statement
-parseWhile = While 
-  <$  string "while"  
-  <*> (whitespace *> char '(' *> parseExpression <* whitespace <* char ')')
-  <*> (char '\n' *> indentedStatements)
+parseWhile = do
+  _     <- string "while"
+  cond  <- between (whitespace *> char '(') (char ')' <* newline) parseExpression
+  stmts <- indentedStatements 
+  return $ While cond stmts
   
 parsePrint :: Parser Statement 
 parsePrint = Print 
@@ -50,9 +51,7 @@ indentedStatements = indentedStatement `sepBy1` (char '\n')
 
 parseExpression :: Parser Expr
 parseExpression = parseCondition
-  <|> parseArith
-  <|> parseVar
-  <|> parseLiteral
+  <|> parseExpr
 
 parseCondition :: Parser Expr 
 parseCondition = parseEquals 
@@ -85,19 +84,49 @@ parseLT = (:<:)
   <*  (token (char '<'))
   <*> parseExpression
                                                                                                                                          
-parseArith :: Parser Expr
-parseArith = do
-  x <- parseLiteral <|> parseVar
-  rest x
+parseAdd :: Parser (Expr -> Expr -> Expr) 
+parseAdd = (:+:) <$ (whitespace *> char '+' *> whitespace)
+   
+parseSub :: Parser (Expr -> Expr -> Expr)  
+parseSub = (:-:) <$ (whitespace *> char '-' *> whitespace)
+ 
+parseDiv :: Parser (Expr -> Expr -> Expr) 
+parseDiv = (:/:) <$ (whitespace *> char '/' *> whitespace)
+   
+parseMul :: Parser (Expr -> Expr -> Expr) 
+parseMul = (:*:) <$ (whitespace *> char '*' *> whitespace)
+   
+parseParens :: Parser Expr
+parseParens = between (whitespace *> char '(' *> whitespace) 
+                      (whitespace *> char ')' *> whitespace) 
+                      parseExpr
+   
+parseFactor :: Parser Expr
+parseFactor = parseLiteral 
+  <|> parseParens 
+  <|> parseVar
+
+parseTerm :: Parser Expr
+parseTerm = do
+    left <- parseFactor
+    rest left
   where
-    rest x = 
-      (do _ <- token $ char '+'
-          y <- parseLiteral <|> parseVar
-          rest (x :+: y)) <|>
-      (do _ <- token $ char '-'
-          y <- parseLiteral <|> parseVar
-          rest (x :-: y)) <|>
-      pure x
+    rest left = (do
+                    op <- parseMul <|> parseDiv
+                    right <- parseFactor
+                    rest (op left right))
+                <|> return left
+
+parseExpr :: Parser Expr
+parseExpr = do
+    left <- parseTerm
+    rest left
+  where
+    rest left = (do
+                    op <- parseAdd <|> parseSub
+                    right <- parseTerm
+                    rest (op left right))
+                <|> return left
       
 parseVar :: Parser Expr 
 parseVar = Var <$> (some (alphaNum))
@@ -113,8 +142,8 @@ parseVal = (ValBool True <$ string "true")
 main :: IO ()
 main = do 
   expr <- readFile "Program.txt"
-  --print $ expr
-  --print $ parse parseStatements expr
+  print $ expr
+  print $ parse parseStatements expr
   case parse parseStatements expr of 
     Just (stmts, _) -> do
       execute stmts []
