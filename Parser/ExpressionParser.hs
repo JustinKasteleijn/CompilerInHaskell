@@ -134,10 +134,14 @@ parseVar = Var <$> (some (alphaNum))
 parseLiteral :: Parser Expr 
 parseLiteral = (Literal <$> parseVal)
 
+parseList :: Parser [Val]
+parseList = between (char '[') (char ']') (sepBy parseVal (char ',' <* whitespace))
+
 parseVal :: Parser Val 
 parseVal = (ValBool True <$ string "true") 
   <|> (ValBool False <$ string "false")
   <|> (ValInt <$> int)
+  <|> (ValList <$> parseList)
 
 main :: IO ()
 main = do 

@@ -25,6 +25,7 @@ data Expr
 data Val 
   = ValInt Int 
   | ValBool Bool
+  | ValList [Val]
  deriving (Show, Eq, Ord)
 
 eval :: Expr -> Env -> Maybe Val
@@ -90,12 +91,12 @@ execute (stmt:stmts) env = do
         Just (ValBool False) -> pure () 
         _                    -> print $ "ERROR: Condition must be of type Boolean"
       pure env 
-
   execute stmts newEnv
 
 printVal :: Val -> IO ()
 printVal (ValInt x)   = print x 
 printVal (ValBool x)  = print x 
+printVal (ValList xs) = mapM print xs *> pure ()
 
 --main :: IO ()
 --main = do
