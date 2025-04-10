@@ -137,9 +137,20 @@ parseLiteral = (Literal <$> parseVal)
 parseList :: Parser [Val]
 parseList = between (char '[') (char ']') (sepBy parseVal (char ',' <* whitespace))
 
+parseDouble :: Parser Val 
+parseDouble = do 
+  num <- digits
+  _ <- char '.'
+  frac <- digits
+  return $ ValDouble $ read (num ++ "." ++ frac) 
+ where 
+   digits :: Parser String 
+   digits = some digit
+
 parseVal :: Parser Val 
 parseVal = (ValBool True <$ string "true") 
   <|> (ValBool False <$ string "false")
+  <|> parseDouble
   <|> (ValInt <$> int)
   <|> (ValList <$> parseList)
 
